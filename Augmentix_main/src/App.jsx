@@ -2,28 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatArea } from './components/Chat';
 import { Navbar } from './components/Navbar';
+import { Login } from './components/Login'; // Import the Login component we'll create
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Add state for login status
 
-  
   // Get new chat session when component mounts
   useEffect(() => {
     console.log('Current Chat ID changed:', currentChatId);
     console.log('Trace:', new Error().stack);
-    if (currentChatId === null) {
+    if (currentChatId === null && isLoggedIn) { // Only create a new chat if logged in
       console.log('Attempting to create new chat');
       createNewChat();
-    } else {
+    } else if (isLoggedIn) {
       // Add this block to load chat history when currentChatId changes
       console.log('Loading chat history for current chat ID');
       loadChatHistory(currentChatId);
     }
-  }, [currentChatId]);
-  
+  }, [currentChatId, isLoggedIn]);
 
   const createNewChat = async () => {
     try {
@@ -45,53 +45,6 @@ function App() {
       return null;
     }
   };
-  // const handleSubmit = async (input) => {
-  //   if (!input.trim()) return;
-  
-  //   // Create the user message object
-  //   const newMessage = { role: 'user', content: input };
-    
-  //   // Immediately add the user message to the messages state
-  //   setMessages(prevMessages => [...prevMessages, newMessage]);
-  
-  //   try {
-  //     const response = await fetch('/api/chat', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         sessionId: currentChatId,
-  //         messages: [...messages, newMessage] // Send updated messages including new message
-  //       }),
-  //     });
-  
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-  
-  //     const data = await response.json();
-      
-  //     if (data.error) {
-  //       throw new Error(data.error);
-  //     }
-
-  //     console.log('Assistant response:', data.content);
-  
-  //     // Add the assistant's response to the messages
-  //     setMessages(prevMessages => [...prevMessages, {
-  //       role: 'assistant',
-  //       content: data.content
-  //     }]);
-  //   } catch (error) {
-  //     console.error('Error:', error);
-  //     // Add an error message if the request fails
-  //     setMessages(prevMessages => [...prevMessages, {
-  //       role: 'assistant',
-  //       content: 'Sorry, there was an error processing your request.'
-  //     }]);
-  //   }
-  // };
 
   const handleSubmit = async (input) => {
     if (!input.trim()) return;
@@ -101,7 +54,6 @@ function App() {
 
     const sessionId = currentChatId || (await createNewChat());
 
-    
     // Set loading state to true before API call
     setIsLoading(true);
   
@@ -144,7 +96,6 @@ function App() {
       setIsLoading(false);
     }
   };
-
 
   const handleFileUpload = async (uploadedFiles) => {
     const formData = new FormData();
@@ -191,28 +142,54 @@ function App() {
     }
   };
 
+  // Handle login
+  const handleLogin = (username, password) => {
+    // Simple dummy validation - in a real app, you would check credentials against a backend
+    if (username === "user" && password === "password") {
+      setIsLoggedIn(true);
+    } else {
+      alert("Invalid credentials! Try username: user, password: password");
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentChatId(null);
+    setMessages([]);
+    setFiles([]);
+  };
+
   return (
-  <div className="flex flex-col h-screen">
-  {/* Navbar */}
-  <div className="flex-none">
-    <Navbar />
-  </div>
-  
-  {/* Main content */}
-  <div className="flex flex-1 overflow-hidden">
-    <Sidebar
-      onFileUpload={handleFileUpload}
-      currentChatId={currentChatId}
-      setCurrentChatId={setCurrentChatId}
-      files={files}
-    />
-    <ChatArea
-      messages={messages}
-      onSubmit={handleSubmit}
-      isLoading={isLoading}  // Pass loading state to ChatArea
-    />
-  </div>
-  </div>
+    <div className="flex flex-col h-screen">
+      {!isLoggedIn ? (
+        // Show login page if not logged in
+        <Login onLogin={handleLogin} />
+      ) : (
+        // Show main app if logged in
+        <>
+          {/* Navbar */}
+          <div className="flex-none">
+            <Navbar onLogout={handleLogout} />
+          </div>
+          
+          {/* Main content */}
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar
+              onFileUpload={handleFileUpload}
+              currentChatId={currentChatId}
+              setCurrentChatId={setCurrentChatId}
+              files={files}
+            />
+            <ChatArea
+              messages={messages}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
